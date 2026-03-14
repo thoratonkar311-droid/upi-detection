@@ -16,7 +16,6 @@ tesseract_path = shutil.which("tesseract")
 if tesseract_path:
     pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
-
 seen_hashes = set()
 
 
@@ -47,7 +46,7 @@ def detect_crop(image):
 
 
 # -------------------------------
-# IMPROVED IMAGE PREPROCESSING
+# IMAGE PREPROCESSING
 # -------------------------------
 def preprocess(image):
 
@@ -74,11 +73,11 @@ def extract_text_with_confidence(image):
 
     custom_config = r'--oem 3 --psm 6'
 
-data = pytesseract.image_to_data(
-    image,
-    config=custom_config,
-    output_type=pytesseract.Output.DICT
-)
+    data = pytesseract.image_to_data(
+        image,
+        config=custom_config,
+        output_type=pytesseract.Output.DICT
+    )
 
     text = ""
 
@@ -96,20 +95,16 @@ data = pytesseract.image_to_data(
 
 
 # -------------------------------
-# IMPROVED TEXT EXTRACTION
+# TEXT EXTRACTION
 # -------------------------------
 def extract_details(text):
 
     upi_pattern = r"[a-zA-Z0-9._]+@[a-zA-Z]+"
-
     amount_pattern = r"₹?\s?\d+[,\d]*(?:\.\d+)?"
-
     txn_pattern = r"[A-Z0-9]{8,}"
 
     upi = re.findall(upi_pattern, text)
-
     amount = re.findall(amount_pattern, text)
-
     txn = re.findall(txn_pattern, text)
 
     name = "Unknown"
@@ -124,14 +119,8 @@ def extract_details(text):
             len(line) > 4
             and len(line) < 30
             and not any(x in line.lower() for x in [
-                "google",
-                "phonepe",
-                "paytm",
-                "upi",
-                "transaction",
-                "₹",
-                "@",
-                "paid"
+                "google", "phonepe", "paytm", "upi",
+                "transaction", "₹", "@", "paid"
             ])
         ):
 
@@ -215,7 +204,9 @@ def detect_duplicate(image):
 
     global seen_hashes
 
-    img_hash = hashlib.md5(image.tobytes()).hexdigest()
+    small = cv2.resize(image, (64, 64))
+
+    img_hash = hashlib.md5(small.tobytes()).hexdigest()
 
     if img_hash in seen_hashes:
         return True
@@ -226,7 +217,7 @@ def detect_duplicate(image):
 
 
 # -------------------------------
-# IMPROVED LOGO DETECTION
+# LOGO DETECTION
 # -------------------------------
 def detect_upi_app(image):
 
@@ -264,8 +255,7 @@ def detect_upi_app(image):
 
             if (result >= 0.5).any():
 
-                detected = app
-                return detected
+                return app
 
     return detected
 
