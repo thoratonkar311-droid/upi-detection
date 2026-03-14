@@ -72,10 +72,13 @@ def preprocess(image):
 # -------------------------------
 def extract_text_with_confidence(image):
 
-    data = pytesseract.image_to_data(
-        image,
-        output_type=pytesseract.Output.DICT
-    )
+    custom_config = r'--oem 3 --psm 6'
+
+data = pytesseract.image_to_data(
+    image,
+    config=custom_config,
+    output_type=pytesseract.Output.DICT
+)
 
     text = ""
 
