@@ -1,0 +1,21 @@
+File Name,Name,UPI App,Fraud Score,Status
+paytm ss.png,Unknown,Unknown,45,SUSPICIOUS
+phonepe ss.png,Sharma,Paytm,45,SUSPICIOUS,True,True,False
+google pay ss.png,‘Google,Unknown,115,FAKE,False,True,False
+phonepe ss.png,Sharma,Paytm,65,FAKE,True,True,True
+phonepe ss.png,Sharma,Paytm,45,SUSPICIOUS,True,True,False
+google pay ss.png,L-BZIA,Paytm,100,FAKE,False,True,False
+phonepe ss.png,Sharma,Paytm,65,FAKE,True,True,True
+phonepe ss.png,Sharma,Paytm,65,FAKE,True,True,True
+google pay ss.png,L-BZIA,Paytm,100,FAKE,False,True,True
+phonepe ss.png,Sharma,Paytm,65,FAKE,True,True,True
+paytm ss.png,Anand,Unknown,45,SUSPICIOUS,True,True,False
+Screenshot 2026-03-14 012126.png,Unknown,Unknown,100,FAKE,False,True,False
+Screenshot 2026-03-14 012126.png,Unknown,Unknown,100,FAKE,False,True,True
+Screenshot 2026-03-14 012116.png,using,Unknown,95,FAKE,False,False,False
+phonepe ss.png,Sharma,Paytm,45,SUSPICIOUS,True,True,False
+paytm ss.png,Anand,Unknown,45,SUSPICIOUS,True,True,False
+google pay ss.png,L-BZIA,Paytm,100,FAKE,False,True,False
+phonepe ss.png,Sharma,Paytm,45,SUSPICIOUS,True,True,False
+paytm ss.png,Anand,Unknown,45,SUSPICIOUS,True,True,False
+phonepe ss.png,Sharma,Paytm,65,FAKE,True,True,True
