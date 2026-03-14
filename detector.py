@@ -4,12 +4,21 @@ import re
 import hashlib
 import csv
 import os
+import shutil
 from PIL import Image, ImageChops
 
-# Tesseract OCR path
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# -------------------------------
+# AUTO DETECT TESSERACT PATH
+# -------------------------------
+tesseract_path = shutil.which("tesseract")
+
+if tesseract_path:
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path
+
 
 seen_hashes = set()
+
 
 # -------------------------------
 # IMAGE DIMENSION CHECK
@@ -44,7 +53,7 @@ def preprocess(image):
 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    gray = cv2.resize(gray,None,fx=3,fy=3)
+    gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
     thresh = cv2.adaptiveThreshold(
         gray,
@@ -63,7 +72,10 @@ def preprocess(image):
 # -------------------------------
 def extract_text_with_confidence(image):
 
-    data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(
+        image,
+        output_type=pytesseract.Output.DICT
+    )
 
     text = ""
 
@@ -86,12 +98,16 @@ def extract_text_with_confidence(image):
 def extract_details(text):
 
     upi_pattern = r"[a-zA-Z0-9._]+@[a-zA-Z]+"
-    amount_pattern = r"₹\s?\d+"
+
+    amount_pattern = r"₹?\s?\d+[,\d]*(?:\.\d+)?"
+
     txn_pattern = r"[A-Z0-9]{8,}"
 
-    upi = re.findall(upi_pattern,text)
-    amount = re.findall(amount_pattern,text)
-    txn = re.findall(txn_pattern,text)
+    upi = re.findall(upi_pattern, text)
+
+    amount = re.findall(amount_pattern, text)
+
+    txn = re.findall(txn_pattern, text)
 
     name = "Unknown"
 
@@ -99,25 +115,42 @@ def extract_details(text):
 
     for line in lines:
 
-        line=line.strip()
+        line = line.strip()
 
-        if len(line) > 4 and not any(x in line.lower() for x in [
-            "google","phonepe","paytm","upi","transaction","₹","@"
-        ]):
+        if (
+            len(line) > 4
+            and len(line) < 30
+            and not any(x in line.lower() for x in [
+                "google",
+                "phonepe",
+                "paytm",
+                "upi",
+                "transaction",
+                "₹",
+                "@",
+                "paid"
+            ])
+        ):
 
-            name=line
+            name = line
             break
 
-    return name,upi,amount,txn
+    return name, upi, amount, txn
 
 
 # -------------------------------
 # VALIDATE UPI HANDLE
 # -------------------------------
 valid_handles = [
-    "okaxis","oksbi","okicici","ybl",
-    "ibl","paytm","upi"
+    "okaxis",
+    "oksbi",
+    "okicici",
+    "ybl",
+    "ibl",
+    "paytm",
+    "upi"
 ]
+
 
 def validate_upi(upi_list):
 
@@ -140,7 +173,6 @@ def detect_editing(image):
 
     temp = "temp.jpg"
 
-    # convert RGBA → RGB to avoid JPEG error
     if image.mode == "RGBA":
         image = image.convert("RGB")
 
@@ -154,7 +186,10 @@ def detect_editing(image):
 
     max_diff = max([ex[1] for ex in extrema])
 
+    os.remove(temp)
+
     return max_diff > 40
+
 
 # -------------------------------
 # NOISE DETECTION
@@ -193,31 +228,36 @@ def detect_duplicate(image):
 def detect_upi_app(image):
 
     apps = {
-        "Google Pay":"logos/gpay.png",
-        "PhonePe":"logos/phonepe.png",
-        "Paytm":"logos/paytm.png"
+        "Google Pay": "logos/gpay.png",
+        "PhonePe": "logos/phonepe.png",
+        "Paytm": "logos/paytm.png"
     }
 
-    gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # search only top region where logos exist
     roi = gray[0:300, :]
 
     detected = "Unknown"
 
-    for app,logo in apps.items():
+    for app, logo in apps.items():
 
-        template = cv2.imread(logo,0)
+        template = cv2.imread(logo, 0)
 
         if template is None:
             continue
 
-        # more scale levels for better matching
-        for scale in [0.3,0.5,0.7,1.0,1.3]:
+        if roi.shape[0] < template.shape[0]:
+            continue
 
-            resized = cv2.resize(template,None,fx=scale,fy=scale)
+        for scale in [0.3, 0.5, 0.7, 1.0, 1.3]:
 
-            result = cv2.matchTemplate(roi,resized,cv2.TM_CCOEFF_NORMED)
+            resized = cv2.resize(template, None, fx=scale, fy=scale)
+
+            result = cv2.matchTemplate(
+                roi,
+                resized,
+                cv2.TM_CCOEFF_NORMED
+            )
 
             if (result >= 0.5).any():
 
@@ -230,7 +270,16 @@ def detect_upi_app(image):
 # -------------------------------
 # FRAUD SCORE
 # -------------------------------
-def fraud_score(upi_valid,txn,amount,editing,dimension,noise,crop,duplicate):
+def fraud_score(
+    upi_valid,
+    txn,
+    amount,
+    editing,
+    dimension,
+    noise,
+    crop,
+    duplicate
+):
 
     score = 0
 
@@ -258,8 +307,7 @@ def fraud_score(upi_valid,txn,amount,editing,dimension,noise,crop,duplicate):
     if not dimension["valid"]:
         score += 20
 
-    # limit max score
-    score = min(score,100)
+    score = min(score, 100)
 
     return score
 
